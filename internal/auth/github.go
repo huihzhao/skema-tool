@@ -3,12 +3,13 @@ package auth
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/go-resty/resty/v2"
-	"github.com/skema-dev/skema-tool/internal/pkg/console"
-	"github.com/skema-dev/skema-tool/internal/pkg/io"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/go-resty/resty/v2"
+	"github.com/skema-dev/skemabuild/internal/pkg/console"
+	"github.com/skema-dev/skemabuild/internal/pkg/io"
 )
 
 var (
@@ -50,8 +51,11 @@ func (g *githubAuth) requestVerificationCode() {
 }
 
 func (g *githubAuth) waitForUserAuthComplete() {
-	console.Info(fmt.Sprintf("please open url %s and input code: %s", g.verificationUrl, g.userCode))
-	console.Info("Wait for github auth ...")
+	console.Info(
+		fmt.Sprintf("please open url %s and input code: %s", g.verificationUrl, g.userCode),
+	)
+	console.Info("After github auth is done, press ENTER key to continue...")
+	fmt.Scanln()
 
 	client := resty.New()
 	sleepTime := 2
@@ -103,6 +107,12 @@ func (g *githubAuth) SaveTokenToFile() {
 func (g *githubAuth) GetLocalToken() string {
 	homePath := io.GetHomePath()
 	tokenFilepath := filepath.Join(homePath, "github/token")
-	data, _ := os.ReadFile(tokenFilepath)
+	data, err := os.ReadFile(tokenFilepath)
+	if err != nil {
+		console.Fatalf(
+			"%s\nLocal github token not found, please run `skbuild auth` to setup",
+		)
+	}
+
 	return string(data)
 }

@@ -6,13 +6,14 @@ function add_env_sh() {
     then
         echo ""
     else
-        echo 'export SKEMA_HOME="${HOME}/.skema/bin"' >> $1
+        echo 'export SKEMA_HOME="${HOME}/.skema"' >> $1
         echo 'export PATH="${PATH}:${SKEMA_HOME}"' >> $1
     fi
 }
 
 # common function to set PATH for different OS. zshrc for macos, bashrc and bash_profile for linux
 function set_environments() {
+    echo "update environment profile"
      # set bash and zsh
      if [[ -f ~/.zshrc ]]; then
          add_env_sh ~/.zshrc
@@ -61,6 +62,8 @@ rm -rf ~/.skema
 install_grpc_protos
 set_environments
 
-go install github.com/skema-dev/skema-tool/cmd/st
+cmd="go install github.com/skema-dev/skemabuild/cmd/skbuild@latest"
+echo $cmd
+eval $cmd
 
 exit 0

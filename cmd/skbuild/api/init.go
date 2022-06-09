@@ -1,18 +1,19 @@
 package api
 
 import (
-	"github.com/skema-dev/skema-tool/internal/api"
-	"github.com/skema-dev/skema-tool/internal/pkg/console"
-	"github.com/skema-dev/skema-tool/internal/pkg/io"
 	"path/filepath"
 	"strings"
+
+	"github.com/skema-dev/skemabuild/internal/api"
+	"github.com/skema-dev/skemabuild/internal/pkg/console"
+	"github.com/skema-dev/skemabuild/internal/pkg/io"
 
 	"github.com/spf13/cobra"
 )
 
 const (
 	initDescription     = "Init API Protocol Buffers Definition"
-	initLongDescription = "sd api init --package=<package_name> --service=<service_name> --path=<output_path>"
+	initLongDescription = "skbuild api init --package=<package_name> --service=<service_name> --path=<output_path>"
 )
 
 func newInitCmd() *cobra.Command {
@@ -27,6 +28,11 @@ func newInitCmd() *cobra.Command {
 			if path == "" {
 				path = "./"
 			}
+
+			if !strings.Contains(userPackage, ".") && !strings.Contains(userPackage, "/") {
+				console.Fatalf("Invalide package name. package must contains . or /, not a single word")
+			}
+
 			var userOptions []string
 			optionValue, err := c.Flags().GetString("option")
 			if err == nil {

@@ -1,15 +1,15 @@
 package repo
 
 import (
-	"github.com/skema-dev/skema-tool/internal/auth"
-	"github.com/skema-dev/skema-tool/internal/pkg/console"
-	"github.com/skema-dev/skema-tool/internal/pkg/repository"
+	"github.com/skema-dev/skemabuild/internal/auth"
+	"github.com/skema-dev/skemabuild/internal/pkg/console"
+	"github.com/skema-dev/skemabuild/internal/pkg/repository"
 	"github.com/spf13/cobra"
 )
 
 const (
 	shortGithubDescription = "manage github repo"
-	longGithubDescription  = "sd repo github list"
+	longGithubDescription  = "skbuild repo github list"
 )
 
 func newGithubCmd() *cobra.Command {

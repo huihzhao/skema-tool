@@ -1,10 +1,11 @@
 package pattern_test
 
 import (
-	"github.com/skema-dev/skema-tool/internal/pkg/pattern"
+	"testing"
+
+	"github.com/skema-dev/skemabuild/internal/pkg/pattern"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"testing"
 )
 
 type testSuite struct {
@@ -109,8 +110,55 @@ func (s *testSuite) TestFindUrlPattern() {
 		})
 	}
 
-	found := pattern.GetNamedMapFromText("https://github.com/test-repo/ccc/tree/main/cc1/sds/sdd/pb", r, []string{"repo_name", "repo_path", "organization_name"})
+	found := pattern.GetNamedMapFromText(
+		"https://github.com/test-repo/ccc/tree/main/cc1/sds/sdd/pb",
+		r,
+		[]string{"repo_name", "repo_path", "organization_name"},
+	)
 	assert.Equal(s.T(), "test-repo", found["organization_name"])
 	assert.Equal(s.T(), "ccc", found["repo_name"])
 	assert.Equal(s.T(), "cc1", found["repo_path"])
+}
+
+func (s *testSuite) TestFindRepoPathPattern() {
+	r := "https://github\\.com/(?P<organization_name>[a-zA-Z0-9-_]+)/(?P<repo_name>[a-zA-Z0-9-_]+)/(blob/main/){0,1}(tree/main/){0,1}(?P<repo_path>[a-zA-Z0-9-_/.]+)"
+
+	tests := []struct {
+		content string
+		pattern string
+		name    string
+		expect  string
+	}{
+		{
+			content: "https://github.com/test-org/test-repo/blob/main/test004/abc/a123/test.proto",
+			pattern: r,
+			name:    "organization_name",
+			expect:  "test-org",
+		},
+		{
+			content: "https://github.com/test-org/test-repo/blob/main/test004/abc/a123/test.proto",
+			pattern: r,
+			name:    "repo_name",
+			expect:  "test-repo",
+		},
+		{
+			content: "https://github.com/test-org/test-repo/blob/main/test004/abc/a123/test.proto",
+			pattern: r,
+			name:    "repo_path",
+			expect:  "test004/abc/a123/test.proto",
+		},
+		{
+			content: "https://github.com/test-org/test-repo/tree/main/test004/abc/a123/test.proto",
+			pattern: r,
+			name:    "repo_path",
+			expect:  "test004/abc/a123/test.proto",
+		},
+	}
+
+	for _, tt := range tests {
+		s.T().Run(tt.name, func(t *testing.T) {
+			result := pattern.GetNamedStringFromText(tt.content, tt.pattern, tt.name)
+			assert.Equal(s.T(), tt.expect, result)
+		})
+	}
 }

@@ -1,19 +1,22 @@
 package api
 
 import (
-	"github.com/skema-dev/skema-go/logging"
-	"github.com/skema-dev/skema-tool/internal/api"
-	"github.com/skema-dev/skema-tool/internal/pkg/console"
-	"github.com/skema-dev/skema-tool/internal/pkg/io"
-	"github.com/spf13/cobra"
+	"github.com/skema-dev/skemabuild/internal/pkg/http"
+	"github.com/skema-dev/skemabuild/internal/pkg/pattern"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/skema-dev/skema-go/logging"
+	"github.com/skema-dev/skemabuild/internal/api"
+	"github.com/skema-dev/skemabuild/internal/pkg/console"
+	"github.com/skema-dev/skemabuild/internal/pkg/io"
+	"github.com/spf13/cobra"
 )
 
 const (
 	createDescription     = "Create API Stubs"
-	createLongDescription = "st api create --go_option github.com/com/test --input ./Hello1.proto -o ./stub-test"
+	createLongDescription = "skbuild api create --go_option github.com/com/test --input ./Hello1.proto -o ./stub-test"
 )
 
 func newCreateCmd() *cobra.Command {
@@ -31,12 +34,10 @@ func newCreateCmd() *cobra.Command {
 				logging.Init("debug", "console")
 			}
 
-			//TODO: download remote file if input starts with http[s]://
+			content := getContentFromInputPath(input)
+			stubs, err := generateStubsFromProto(content, stubTypes, goOption)
+			console.FatalIfError(err)
 
-			stubs, err := generateStubsFromProto(input, stubTypes, goOption)
-			if err != nil {
-				console.Fatalf(err.Error())
-			}
 			for path, stub := range stubs {
 				stubFilepath := filepath.Join(output, path)
 				if err = io.SaveToFile(stubFilepath, []byte(stub)); err != nil {
@@ -58,13 +59,12 @@ func newCreateCmd() *cobra.Command {
 	return cmd
 }
 
-func generateStubsFromProto(protoPath string, stubTypes string, goOption string) (stubs map[string]string, err error) {
+func generateStubsFromProto(
+	content string,
+	stubTypes string,
+	goOption string,
+) (stubs map[string]string, err error) {
 	stubs = make(map[string]string)
-	data, err := os.ReadFile(protoPath)
-	if err != nil {
-		console.Fatalf(err.Error())
-	}
-	content := string(data)
 	stubTypeArr := strings.Split(stubTypes, ",")
 
 	for _, stubType := range stubTypeArr {
@@ -80,17 +80,28 @@ func generateStubsFromProto(protoPath string, stubTypes string, goOption string)
 			console.Errorf("unsupported stub type: %s", stubType)
 			continue
 		}
-
 		contents, err := creator.Generate(content)
-		if err != nil {
-			console.Fatalf(err.Error())
-		}
+		console.FatalIfError(err)
 
 		for k, v := range contents {
 			stubFilePath := filepath.Join(stubType, k)
 			stubs[stubFilePath] = v
 		}
 	}
-
+	logging.Debugf("%v", stubs)
 	return stubs, nil
+}
+
+func getContentFromInputPath(input string) string {
+	var content string
+	if pattern.IsHttpUrl(input) {
+		content = http.GetTextContent(input)
+	} else if pattern.IsGithubUrl(input) {
+		console.Fatalf("please use the raw content link for github proto file")
+	} else {
+		data, err := os.ReadFile(input)
+		console.FatalIfError(err, "failed to read from "+input)
+		content = string(data)
+	}
+	return content
 }
